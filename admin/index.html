@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ECHT ODER KI? · Admin</title>
+  <style>
+    :root {
+      --bg:#0b0d12; --panel:#141820; --panel-2:#0f131b; --border:#232a36;
+      --text:#e8ebf2; --muted:#8b94a7; --accent:#5b8cff;
+      --leicht:#2dd4bf; --mittel:#f5a524; --schwer:#f43f5e;
+      --ok:#34d399; --err:#f43f5e; color-scheme: dark;
+    }
+    * { box-sizing:border-box; }
+    html { overflow-y: scroll; }
+    body { margin:0; background:radial-gradient(1200px 600px at 80% -10%, #15203a 0%, var(--bg) 55%); color:var(--text);
+      font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; min-height:100vh; }
+    header { display:flex; align-items:center; gap:16px; padding:14px 22px; background:rgba(13,16,22,.7);
+      backdrop-filter:blur(8px); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:20; }
+    .brand { display:flex; align-items:center; gap:10px; font-weight:650; }
+    .brand .dot { width:10px; height:10px; border-radius:50%; background:var(--muted); }
+    .brand .dot.ok { background:var(--ok); box-shadow:0 0 12px var(--ok); }
+    .brand .dot.err { background:var(--err); box-shadow:0 0 12px var(--err); }
+    header .spacer { flex:1; }
+    main { max-width:1100px; margin:0 auto; padding:22px; }
+    .tabs { display:inline-flex; background:var(--panel-2); border:1px solid var(--border); border-radius:12px; padding:4px; gap:4px; margin-bottom:20px; }
+    .tab { padding:8px 16px; border-radius:9px; cursor:pointer; color:var(--muted); font-weight:550; border:0; background:transparent; }
+    .tab.active { background:var(--accent); color:#fff; }
+    .panel { background:linear-gradient(180deg,var(--panel),var(--panel-2)); border:1px solid var(--border); border-radius:16px; padding:20px; margin-bottom:18px; box-shadow:0 12px 40px rgba(0,0,0,.25); }
+    h2 { margin:0 0 14px; font-size:13px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
+    label { display:block; font-size:12px; color:var(--muted); margin:0 0 5px; }
+    input,select,textarea { width:100%; background:var(--panel-2); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:9px 11px; font:inherit; outline:none; }
+    input:focus,select:focus,textarea:focus { border-color:var(--accent); }
+    textarea { min-height:100px; resize:vertical; }
+    .row { display:flex; gap:12px; flex-wrap:wrap; align-items:end; }
+    button { background:var(--accent); color:#fff; border:0; border-radius:10px; padding:10px 16px; cursor:pointer; font:inherit; font-weight:550; white-space:nowrap; }
+    button:hover:not(:disabled){ filter:brightness(1.08); }
+    button.secondary { background:#222a38; }
+    button.ghost { background:transparent; border:1px solid var(--border); color:var(--text); }
+    button.danger { background:#4c1322; color:#ffb3c1; }
+    button.small { padding:6px 10px; font-size:12px; }
+    button:disabled { opacity:.45; cursor:default; }
+    .badge { display:inline-flex; align-items:center; gap:6px; font-size:11px; padding:3px 9px; border-radius:999px; background:#222a38; color:var(--muted); }
+    .badge.ok { background:rgba(52,211,153,.15); color:#6ee7b7; }
+    .badge.missing { background:rgba(244,63,94,.15); color:#fda4af; }
+    table { width:100%; border-collapse:collapse; }
+    th,td { padding:10px; border-bottom:1px solid var(--border); font-size:14px; text-align:left; vertical-align:top; }
+    th { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.05em; }
+    th[data-d="leicht"]{ color:var(--leicht);} th[data-d="mittel"]{ color:var(--mittel);} th[data-d="schwer"]{ color:var(--schwer);}
+    .cellbtns { display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
+    .tbtn { display:inline-flex; align-items:center; gap:6px; background:#222a38; color:var(--text); border:0; border-radius:8px; padding:6px 10px; font-size:12px; font-weight:550; cursor:pointer; white-space:nowrap; }
+    .tbtn:hover:not(:disabled){ filter:brightness(1.2); }
+    .tbtn:disabled { opacity:.45; cursor:default; }
+    .tbtn svg { display:block; }
+    .datecell { display:flex; flex-direction:column; align-items:flex-start; gap:8px; }
+    /* progress */
+    #progress { margin:14px 0 0; display:none; } #progress.show { display:block; }
+    .pbar { height:9px; background:var(--panel-2); border:1px solid var(--border); border-radius:999px; overflow:hidden; }
+    .pfill { height:100%; width:0; background:linear-gradient(90deg,var(--accent),#8b5cff); transition:width .4s ease; }
+    .pfill.active { background-size:30px 30px; background-image:linear-gradient(45deg,rgba(255,255,255,.18) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.18) 50%,rgba(255,255,255,.18) 75%,transparent 75%); animation:stripes 1s linear infinite; }
+    @keyframes stripes { from{background-position:0 0;} to{background-position:30px 0;} }
+    #plabel { font-size:13px; color:var(--muted); margin-top:8px; display:flex; align-items:center; gap:8px; }
+    .spinner { width:14px; height:14px; border:2px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin .7s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg);} }
+    /* detail rounds */
+    .detail-head { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+    .rcard { border:1px solid var(--border); border-radius:14px; padding:14px; margin-top:14px; background:var(--panel-2); }
+    .rhead { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
+    .rhead .grow { flex:1; }
+    .ritems { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    @media (max-width:680px){ .ritems { grid-template-columns:1fr; } }
+    .ibox { border:1px solid var(--border); border-radius:10px; padding:10px; position:relative; }
+    .ibox.real { border-color:rgba(52,211,153,.5); }
+    .ibox.fake { border-color:rgba(244,63,94,.5); }
+    .ilabel { position:absolute; top:8px; right:8px; font-size:10px; font-weight:700; padding:2px 8px; border-radius:6px; }
+    .ibox.real .ilabel { background:rgba(52,211,153,.2); color:#6ee7b7; }
+    .ibox.fake .ilabel { background:rgba(244,63,94,.2); color:#fda4af; }
+    .ibox img { width:100%; max-height:260px; object-fit:contain; border-radius:6px; background:#000; }
+    .ibox pre { white-space:pre-line; font:13px/1.5 ui-serif,Georgia,serif; color:#d6dae2; margin:0; max-height:260px; overflow:auto; }
+    .kat { font-size:10px; text-transform:uppercase; letter-spacing:.06em; padding:2px 7px; border-radius:6px; background:#222a38; color:var(--muted); }
+    /* library grid */
+    .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:16px; }
+    .card { background:var(--panel-2); border:1px solid var(--border); border-radius:14px; overflow:hidden; display:flex; flex-direction:column; }
+    .card img { width:100%; aspect-ratio:4/3; object-fit:cover; background:#000; }
+    .card .body { padding:12px 13px; flex:1; }
+    .card .meta { font-size:12px; color:var(--muted); margin-top:4px; }
+    .card pre { white-space:pre-line; font:12px/1.45 ui-serif,Georgia,serif; color:#d3d9e4; max-height:120px; overflow:auto; margin:8px 0 0; }
+    .card .actions { display:flex; gap:8px; padding:11px 13px; border-top:1px solid var(--border); }
+    #toast { position:fixed; bottom:20px; right:20px; background:var(--panel); border:1px solid var(--border); padding:13px 17px; border-radius:12px; opacity:0; transform:translateY(8px); transition:.2s; max-width:460px; box-shadow:0 14px 40px rgba(0,0,0,.4); z-index:50; }
+    #toast.show { opacity:1; transform:none; } #toast.err { border-color:var(--err); }
+    small.hint { color:#5e6675; }
+    .hidden { display:none !important; }
+    dialog { background:var(--panel); color:var(--text); border:1px solid var(--border); border-radius:16px; width:min(560px,94vw); padding:0; }
+    dialog::backdrop { background:rgba(0,0,0,.65); }
+    .dlg-body { padding:22px; display:grid; gap:13px; } .dlg-actions { display:flex; justify-content:flex-end; gap:10px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand"><span class="dot" id="connDot"></span>ECHT ODER KI? · Admin</div>
+    <div class="spacer"></div>
+    <button id="connToggle" class="ghost small">Verbindung</button>
+  </header>
+
+  <main>
+    <div class="panel hidden" id="connPanel">
+      <div class="row">
+        <div style="flex:2;min-width:240px"><label>Functions-Basis-URL</label><input id="base" placeholder="https://us-central1-ki-duell.cloudfunctions.net" /></div>
+        <div style="flex:2;min-width:240px"><label>Admin-Token</label><input id="token" type="password" placeholder="ADMIN_TOKEN" /></div>
+        <div><button id="save">Speichern & verbinden</button></div>
+      </div>
+      <p style="margin:10px 0 0"><small class="hint">Wird nur lokal im Browser gespeichert.</small></p>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="challenges">Challenges</button>
+      <button class="tab" data-tab="library">Bibliothek</button>
+    </div>
+
+    <!-- CHALLENGES -->
+    <div id="tab-challenges">
+      <div class="panel">
+        <h2>Übersicht Challenges</h2>
+        <div class="row" style="margin-bottom:6px">
+          <div style="flex:0"><label>Ab Datum</label><input id="from" type="date" /></div>
+          <div style="flex:0"><label>Tage</label><input id="days" type="number" min="1" max="30" value="7" style="width:90px" /></div>
+          <div style="flex:0;display:flex;align-items:end"><button id="loadOverview" class="secondary">Übersicht laden</button></div>
+        </div>
+        <div id="progress"><div class="pbar"><div class="pfill" id="pfill"></div></div><div id="plabel"></div></div>
+        <div style="overflow-x:auto;margin-top:14px"><table id="overview"><tbody><tr><td><small class="hint">Noch nicht geladen.</small></td></tr></tbody></table></div>
+      </div>
+
+      <div class="panel hidden" id="detailPanel">
+        <div class="detail-head">
+          <h2 style="margin:0">Detail: <span id="detailTitle"></span></h2>
+          <div style="display:flex;gap:8px">
+            <button id="detailRegen" class="secondary small">Komplett neu erzeugen</button>
+            <button id="detailClose" class="ghost small">Schließen</button>
+          </div>
+        </div>
+        <div id="detailRounds"></div>
+      </div>
+    </div>
+
+    <!-- LIBRARY -->
+    <div id="tab-library" class="hidden">
+      <div class="panel">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+          <h2 style="margin:0">Kuratierte Bibliothek</h2>
+          <span id="libCount" class="badge"></span>
+        </div>
+        <div class="row" style="margin-bottom:16px;align-items:end">
+          <div style="flex:0;min-width:240px"><label>Kategorie anzeigen</label>
+            <select id="filter" style="min-width:240px"><option value="">Alle Kategorien</option><option value="gedicht">Nur Gedichte</option><option value="prosa">Nur Prosa</option><option value="gemaelde">Nur Gemälde</option></select></div>
+          <div style="flex:1;display:flex;gap:10px;align-items:end;justify-content:flex-end;flex-wrap:wrap">
+            <button id="newEntry">+ Neuer Eintrag</button>
+          </div>
+        </div>
+        <div id="library" class="grid"></div>
+      </div>
+    </div>
+  </main>
+
+  <dialog id="dlg"><form method="dialog" class="dlg-body">
+    <h3 id="dlgTitle" style="margin:0">Eintrag</h3>
+    <input type="hidden" id="f_id" />
+    <div><label>Kategorie</label><select id="f_kategorie"><option value="gedicht">Gedicht</option><option value="prosa">Prosa</option><option value="gemaelde">Gemälde</option></select></div>
+    <div><label>Künstler:in</label><input id="f_kuenstler" /></div>
+    <div><label>Thema / Motiv</label><input id="f_thema" /></div>
+    <div><label>Bekanntheit</label><select id="f_bekanntheit"><option value="hoch">hoch</option><option value="mittel" selected>mittel</option><option value="niedrig">niedrig</option></select></div>
+    <div><label id="f_inhalt_label">Inhalt</label><textarea id="f_inhalt"></textarea></div>
+    <div><label>Quelle (gemeinfrei!)</label><input id="f_quelle" /></div>
+    <p style="margin:0"><small class="hint">Originale müssen ECHTE, gemeinfreie Werke sein – niemals KI-generiert.</small></p>
+    <div class="dlg-actions"><button type="button" id="dlgCancel" class="ghost">Abbrechen</button><button type="button" id="dlgSave">Speichern</button></div>
+  </form></dialog>
+
+  <div id="toast"></div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const DIFFS = ['leicht','mittel','schwer'];
+    const ICON = {
+      eye: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>',
+      refresh: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>',
+      bolt: '<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
+    };
+    const base = () => ($('base').value || '').replace(/\/+$/, '');
+    const token = () => $('token').value || '';
+    let libraryData = [];
+    let libraryLoaded = false;
+    let openDetailKey = null; // {date,difficulty}
+
+    function toast(m, err){ const t=$('toast'); t.textContent=m; t.className='show'+(err?' err':''); setTimeout(()=>t.className='', err?6500:3000); }
+    function setBusy(b){ document.querySelectorAll('button').forEach(x=>x.disabled=b); }
+    function setConn(s){ $('connDot').className='dot'+(s?' '+s:''); }
+    function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+    async function api(path,{params={},method='GET',body=null}={}) {
+      const url=new URL(base()+'/'+path); url.searchParams.set('token',token());
+      for(const [k,v] of Object.entries(params)) if(v!==undefined&&v!==null&&v!=='') url.searchParams.set(k,v);
+      const opt={method}; if(body){opt.headers={'Content-Type':'application/json'};opt.body=JSON.stringify(body);}
+      const res=await fetch(url,opt); const data=await res.json().catch(()=>({}));
+      if(!res.ok) throw new Error(data.error||('HTTP '+res.status)); return data;
+    }
+
+    function showProgress(on){ $('progress').classList.toggle('show',on); }
+    function setProgress(frac,label,active){ $('pfill').style.width=Math.round(frac*100)+'%'; $('pfill').classList.toggle('active',!!active); $('plabel').innerHTML=(active?'<span class="spinner"></span>':'')+label; }
+
+    // --- Tabs ---
+    document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
+      document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x===t));
+      $('tab-challenges').classList.toggle('hidden',t.dataset.tab!=='challenges');
+      $('tab-library').classList.toggle('hidden',t.dataset.tab!=='library');
+      if(t.dataset.tab==='library' && !libraryLoaded && token()) loadLibrary();
+    }));
+
+    // --- Overview ---
+    async function loadOverview(silent){
+      try {
+        if(!silent) setBusy(true);
+        const { days } = await api('adminGetChallengeRange',{params:{date:$('from').value,days:$('days').value}});
+        const head = '<tr><th>Datum</th>'+DIFFS.map(d=>`<th data-d="${d}">${d}</th>`).join('')+'</tr>';
+        const rows = days.map(day=>{
+          const byD = Object.fromEntries(day.status.map(s=>[s.difficulty,s]));
+          const cells = DIFFS.map(d=>{
+            const s = byD[d]||{exists:false,rounds:0};
+            const genIcon = s.exists ? ICON.refresh : ICON.bolt;
+            const genText = s.exists ? 'Aktualisieren' : 'Generieren';
+            return `<td>
+              <span class="badge ${s.exists?'ok':'missing'}">${s.exists?s.rounds+' Runden':'fehlt'}</span>
+              <div class="cellbtns">
+                <button class="tbtn" title="Detail ansehen" onclick="openDetail('${day.date}','${d}')">${ICON.eye}<span>Details</span></button>
+                <button class="tbtn" title="${s.exists?'Challenge aktualisieren':'Challenge generieren'}" onclick="regenCell('${day.date}','${d}')">${genIcon}<span>${genText}</span></button>
+              </div></td>`;
+          }).join('');
+          const dayHasData = day.status.some(s=>s.exists);
+          const dayIcon = dayHasData ? ICON.refresh : ICON.bolt;
+          const dayText = dayHasData ? 'Aktualisieren' : 'Generieren';
+          return `<tr><td><div class="datecell"><strong>${day.date}</strong><button class="tbtn" title="Alle 3 Stufen ${dayHasData?'aktualisieren':'generieren'}" onclick="genDay('${day.date}')">${dayIcon}<span>${dayText}</span></button></div></td>${cells}</tr>`;
+        }).join('');
+        $('overview').innerHTML = '<thead>'+head+'</thead><tbody>'+rows+'</tbody>';
+        setConn('ok');
+      } catch(e){ setConn('err'); if(!silent) toast(e.message,true); } finally { if(!silent) setBusy(false); }
+    }
+
+    async function genDay(date){
+      if(!confirm(`Alle drei Stufen für ${date} erzeugen? Überschreibt vorhandene.`)) return;
+      setBusy(true); showProgress(true);
+      const failed=[];
+      for(let i=0;i<DIFFS.length;i++){
+        const d=DIFFS[i];
+        setProgress(i/DIFFS.length,`Erzeuge <b>${d}</b> für ${date} … (${i+1}/${DIFFS.length})`,true);
+        try{ await api('adminGenerateChallenge',{params:{date,difficulty:d},method:'POST'}); }
+        catch(e){ failed.push(`${d}: ${e.message}`); }
+        const done=!failed.some(f=>f.startsWith(d+':'));
+        setProgress((i+1)/DIFFS.length,`${d} ${done?'fertig':'fehlgeschlagen'} (${i+1}/${DIFFS.length})`, i+1<DIFFS.length);
+        await loadOverview(true);
+      }
+      setBusy(false); setTimeout(()=>showProgress(false),1200);
+      if(failed.length===0) toast(`Alle Challenges für ${date} erzeugt. 🎉`);
+      else toast('Fehlgeschlagen – '+failed.join('  |  '),true);
+      if(openDetailKey && openDetailKey.date===date) await openDetail(openDetailKey.date,openDetailKey.difficulty);
+    }
+    window.genDay = genDay;
+
+    async function regenCell(date,difficulty){
+      if(!confirm(`Challenge erzeugen (${difficulty}, ${date})? Überschreibt vorhandene.`)) return;
+      setBusy(true); showProgress(true); setProgress(0.2,`Erzeuge <b>${difficulty}</b> für ${date} …`,true);
+      try {
+        await api('adminGenerateChallenge',{params:{date,difficulty},method:'POST'});
+        setProgress(1,'Fertig.',false); toast(`${difficulty} (${date}) erzeugt.`);
+        await loadOverview(true);
+        if(openDetailKey && openDetailKey.date===date && openDetailKey.difficulty===difficulty) await openDetail(date,difficulty);
+      } catch(e){ toast(e.message,true); } finally { setBusy(false); setTimeout(()=>showProgress(false),800); }
+    }
+    window.regenCell = regenCell;
+
+    // --- Detail ---
+    async function openDetail(date,difficulty){
+      try {
+        setBusy(true);
+        const data = await api('adminGetChallengeDetail',{params:{date,difficulty}});
+        openDetailKey = {date,difficulty};
+        $('detailTitle').textContent = `${date} · ${difficulty}`;
+        $('detailPanel').classList.remove('hidden');
+        if(!data.exists || data.rounds.length===0){ $('detailRounds').innerHTML='<p><small class="hint">Keine Challenge für diese Stufe/diesen Tag. Erst erzeugen.</small></p>'; return; }
+        $('detailRounds').innerHTML = data.rounds.map(r=>{
+          const items = r.items.map(it=>{
+            const isFake = it.id===r.fakeId;
+            const content = it.typ==='bild' ? `<img loading="lazy" src="${it.inhalt}" alt="" />` : `<pre>${esc(it.inhalt)}</pre>`;
+            return `<div class="ibox ${isFake?'fake':'real'}"><span class="ilabel">${isFake?'KI':'ECHT'}</span>${content}</div>`;
+          }).join('');
+          return `<div class="rcard">
+            <div class="rhead">
+              <span class="grow"><strong>${esc(r.kuenstler)}</strong> · ${esc(r.thema)} <span class="kat">${r.kategorie}</span></span>
+              <span class="badge">KI-Modell: ${esc(r.model)}</span>
+              <button class="secondary small" onclick="reroll('${date}','${difficulty}','${r.roundId}')">↻ Neu würfeln</button>
+            </div>
+            <div class="ritems">${items}</div>
+          </div>`;
+        }).join('');
+        setConn('ok');
+      } catch(e){ toast(e.message,true); } finally { setBusy(false); }
+    }
+    window.openDetail = openDetail;
+
+    async function reroll(date,difficulty,roundId){
+      setBusy(true); showProgress(true); setProgress(0.3,`Würfle Runde ${roundId} neu …`,true);
+      try {
+        await api('adminRerollRound',{params:{date,difficulty,roundId},method:'POST'});
+        setProgress(1,'Fertig.',false); toast('Runde neu gewürfelt.');
+        await openDetail(date,difficulty); await loadOverview(true);
+      } catch(e){ toast(e.message,true); } finally { setBusy(false); setTimeout(()=>showProgress(false),800); }
+    }
+    window.reroll = reroll;
+
+    $('detailClose').addEventListener('click',()=>{ $('detailPanel').classList.add('hidden'); openDetailKey=null; });
+    $('detailRegen').addEventListener('click',()=>{ if(openDetailKey) regenCell(openDetailKey.date,openDetailKey.difficulty); });
+
+    // --- Library ---
+    function renderLibrary(){
+      const f=$('filter').value;
+      const items=libraryData.map((e,i)=>({e,i})).filter(({e})=>!f||e.kategorie===f);
+      $('libCount').textContent=items.length+' Einträge';
+      $('library').innerHTML=items.map(({e,i})=>{
+        const img=e.original.typ==='bild'?`<img loading="lazy" src="${e.original.inhalt}" alt="" />`:'';
+        const txt=e.original.typ==='text'?`<pre>${esc(e.original.inhalt)}</pre>`:'';
+        return `<div class="card">${img}<div class="body"><span class="kat">${e.kategorie}</span>
+          <div class="meta" style="margin-top:8px"><strong style="color:var(--text)">${esc(e.kuenstler)}</strong></div>
+          <div class="meta">${esc(e.thema)} · ${e.bekanntheit}</div>${txt}
+          <div class="meta" style="margin-top:6px">${esc(e.original.quelle)}</div></div>
+          <div class="actions"><button class="secondary small" onclick="editEntry(${i})">Bearbeiten</button>
+          <button class="danger small" onclick="deleteEntry(${i})">Löschen</button></div></div>`;
+      }).join('');
+    }
+    async function loadLibrary(silent){
+      try{ if(!silent) setBusy(true); const {entries}=await api('adminListLibrary'); libraryData=entries; libraryLoaded=true; renderLibrary(); setConn('ok'); if(!silent) toast(entries.length+' Einträge geladen.'); }
+      catch(e){ setConn('err'); if(!silent) toast(e.message,true); } finally { if(!silent) setBusy(false); }
+    }
+    function updateInhaltLabel(){ $('f_inhalt_label').textContent=$('f_kategorie').value==='gemaelde'?'Bild-URL (http…)':'Text (Gedicht/Prosa)'; }
+    function openForm(entry){
+      $('dlgTitle').textContent=entry?'Eintrag bearbeiten':'Neuer Eintrag';
+      $('f_id').value=entry?.id||''; $('f_kategorie').value=entry?.kategorie||'gedicht';
+      $('f_kuenstler').value=entry?.kuenstler||''; $('f_thema').value=entry?.thema||'';
+      $('f_bekanntheit').value=entry?.bekanntheit||'mittel'; $('f_inhalt').value=entry?.original?.inhalt||'';
+      $('f_quelle').value=entry?.original?.quelle||''; updateInhaltLabel(); $('dlg').showModal();
+    }
+    window.editEntry=(i)=>openForm(libraryData[i]);
+    window.deleteEntry=async(i)=>{ const e=libraryData[i]; if(!confirm(`Eintrag löschen?\n${e.kuenstler} – ${e.thema}`))return;
+      try{ setBusy(true); await api('adminDeleteLibraryEntry',{params:{id:e.id},method:'POST'}); toast('Gelöscht.'); await loadLibrary(true);}catch(err){toast(err.message,true);}finally{setBusy(false);} };
+    async function saveForm(){
+      const body={id:$('f_id').value||undefined,kategorie:$('f_kategorie').value,kuenstler:$('f_kuenstler').value,thema:$('f_thema').value,bekanntheit:$('f_bekanntheit').value,inhalt:$('f_inhalt').value,quelle:$('f_quelle').value};
+      try{ setBusy(true); await api('adminSaveLibraryEntry',{method:'POST',body}); $('dlg').close(); toast('Gespeichert.'); await loadLibrary(true);}catch(e){toast(e.message,true);}finally{setBusy(false);}
+    }
+
+    // Init
+    $('base').value=localStorage.getItem('kiduell_base')||'https://us-central1-ki-duell.cloudfunctions.net';
+    $('token').value=localStorage.getItem('kiduell_token')||'';
+    $('from').value=new Date().toISOString().slice(0,10);
+    if(!token()) $('connPanel').classList.remove('hidden');
+    $('connToggle').addEventListener('click',()=>$('connPanel').classList.toggle('hidden'));
+    $('save').addEventListener('click',async()=>{ localStorage.setItem('kiduell_base',base()); localStorage.setItem('kiduell_token',token()); $('connPanel').classList.add('hidden'); await loadOverview(); });
+    $('loadOverview').addEventListener('click',()=>loadOverview());
+    $('newEntry').addEventListener('click',()=>openForm(null));
+    $('filter').addEventListener('change',renderLibrary);
+    $('f_kategorie').addEventListener('change',updateInhaltLabel);
+    $('dlgCancel').addEventListener('click',()=>$('dlg').close());
+    $('dlgSave').addEventListener('click',saveForm);
+    if(token()) loadOverview(true);
+  </script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Tages-Leaderboards (pro Stufe) und kombiniertes Global-Ranking:
+    // für alle lesbar, aber nur über Functions (Admin SDK) beschreibbar.
+    match /dailyScores/{document=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /globalScores/{document=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Tages-Challenges enthalten die Lösung (welches Item die Fälschung ist).
+    // Kein Client-Zugriff – ausschließlich über Functions.
+    match /dailyChallenges/{document=**} {
+      allow read, write: if false;
+    }
+
+    // Kuratierte Bibliothek: nur über (Admin-)Functions, nicht vom Client.
+    match /library/{document=**} {
+      allow read, write: if false;
+    }
+
+    // Start-Zeitstempel für die serverseitige Zeitmessung – nur Functions.
+    match /runStarts/{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
