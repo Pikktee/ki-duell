@@ -3,16 +3,19 @@ import { onSchedule } from "firebase-functions/v2/scheduler";
 import { getFirestore } from "firebase-admin/firestore";
 import { OPENROUTER_API_KEY, generateTextCompletion } from "./providers/openrouter";
 import { REPLICATE_API_KEY, generateImage } from "./providers/replicate";
+import { ELEVENLABS_API_KEY } from "./providers/elevenlabs";
 import { TIER_MODELS, pickModel, DIFFICULTIES, Difficulty, isDifficulty } from "./config/tiers";
 import { isPlaceholderImage, LibraryEntry, Category, OriginalType } from "./lib/library";
 import { listLibrary } from "./lib/libraryStore";
 import { buildTextPrompt, buildImagePrompt } from "./lib/prompts";
 import { persistImageFromUrl } from "./lib/storage";
+import { prewarmSpeech } from "./lib/tts";
 import { seededRandom, shuffle } from "./util/random";
 
 const ROUNDS_TEXT = 3;
 const ROUNDS_IMAGE = 3;
-const SECRETS = [OPENROUTER_API_KEY, REPLICATE_API_KEY];
+// ELEVENLABS_API_KEY: für das Vorab-Caching der Sprachausgabe (Text-Runden).
+const SECRETS = [OPENROUTER_API_KEY, REPLICATE_API_KEY, ELEVENLABS_API_KEY];
 
 interface ChallengeItem {
   id: string;
@@ -88,8 +91,16 @@ async function buildRound(
     const generatedUrl = await generateImage(model, buildImagePrompt(entry));
     // Beide Bilder auf identisches Quadrat normalisieren (kein Rand-Verräter) und
     // dauerhaft in Storage sichern (Replicate-URLs verfallen ohnehin).
-    fakeContent = await persistImageFromUrl(generatedUrl);
+    // Die KI-Fälschung zusätzlich altern (Weichzeichnung, Firnis-Stich, niedrigere WebP-Qualität),
+    // damit sie nicht digital-glatter wirkt als die echte Museums-Reproduktion.
+    fakeContent = await persistImageFromUrl(generatedUrl, { aged: true });
     realContent = await persistImageFromUrl(entry.original.inhalt);
+  }
+
+  // Sprachausgabe für Text-Runden vorab erzeugen (beide Werke), damit der erste
+  // "Vorlesen"-Klick sofort aus dem Cache spielt. Best-effort: blockiert die Runde nie.
+  if (entry.original.typ === "text") {
+    await prewarmSpeech([realContent, fakeContent]);
   }
 
   const items = shuffle(

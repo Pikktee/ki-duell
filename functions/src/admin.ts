@@ -3,6 +3,7 @@ import { defineSecret } from "firebase-functions/params";
 import type { Response } from "express";
 import { OPENROUTER_API_KEY } from "./providers/openrouter";
 import { REPLICATE_API_KEY } from "./providers/replicate";
+import { ELEVENLABS_API_KEY } from "./providers/elevenlabs";
 import { DIFFICULTIES, isDifficulty, Difficulty } from "./config/tiers";
 import { getChallenge, regenerateChallenge, rerollRound, todayBerlin } from "./dailyChallenge";
 import { Category, Fame, LibraryEntry } from "./lib/library";
@@ -100,7 +101,7 @@ function normalizeEntry(raw: Record<string, unknown>): LibraryEntry {
 export const adminGenerateChallenge = onRequest(
   {
     cors: true,
-    secrets: [ADMIN_TOKEN, OPENROUTER_API_KEY, REPLICATE_API_KEY],
+    secrets: [ADMIN_TOKEN, OPENROUTER_API_KEY, REPLICATE_API_KEY, ELEVENLABS_API_KEY],
     timeoutSeconds: 540,
     memory: "1GiB",
   },
@@ -195,7 +196,7 @@ export const adminGetChallengeDetail = onRequest(
 export const adminRerollRound = onRequest(
   {
     cors: true,
-    secrets: [ADMIN_TOKEN, OPENROUTER_API_KEY, REPLICATE_API_KEY],
+    secrets: [ADMIN_TOKEN, OPENROUTER_API_KEY, REPLICATE_API_KEY, ELEVENLABS_API_KEY],
     timeoutSeconds: 300,
     memory: "1GiB",
   },
