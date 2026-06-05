@@ -2,7 +2,7 @@ import { initializeApp } from "firebase-admin/app";
 
 initializeApp();
 
-export { dailyChallenge, getDailyChallenge } from "./dailyChallenge";
+export { getDailyChallenge } from "./dailyChallenge";
 export { startDailyRun, submitDailyScore, getMyDailyStatus } from "./submitScore";
 export { getTiers } from "./meta";
 export { synthesizeSpeech } from "./speech";

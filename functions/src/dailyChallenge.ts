@@ -1,10 +1,8 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
-import { onSchedule } from "firebase-functions/v2/scheduler";
 import { getFirestore } from "firebase-admin/firestore";
-import { OPENROUTER_API_KEY, generateTextCompletion } from "./providers/openrouter";
-import { REPLICATE_API_KEY, generateImage } from "./providers/replicate";
-import { ELEVENLABS_API_KEY } from "./providers/elevenlabs";
-import { TIER_MODELS, pickModel, DIFFICULTIES, Difficulty, isDifficulty } from "./config/tiers";
+import { generateTextCompletion } from "./providers/openrouter";
+import { generateImage } from "./providers/replicate";
+import { TIER_MODELS, pickModel, Difficulty, isDifficulty } from "./config/tiers";
 import { isPlaceholderImage, LibraryEntry, Category, OriginalType } from "./lib/library";
 import { listLibrary } from "./lib/libraryStore";
 import { buildTextPrompt, buildImagePrompt } from "./lib/prompts";
@@ -14,9 +12,6 @@ import { seededRandom, shuffle } from "./util/random";
 
 const ROUNDS_TEXT = 3;
 const ROUNDS_IMAGE = 3;
-// ELEVENLABS_API_KEY: für das Vorab-Caching der Sprachausgabe (Text-Runden).
-const SECRETS = [OPENROUTER_API_KEY, REPLICATE_API_KEY, ELEVENLABS_API_KEY];
-
 interface ChallengeItem {
   id: string;
   typ: OriginalType;
@@ -253,20 +248,9 @@ function sanitizeRound(round: ChallengeRound) {
   };
 }
 
-// Vorberechnung per Cron: erzeugt die drei Tages-Challenges (pro Stufe), falls nötig.
-export const dailyChallenge = onSchedule(
-  { schedule: "0 0 * * *", timeZone: "Europe/Berlin", secrets: SECRETS, timeoutSeconds: 540, memory: "1GiB" },
-  async () => {
-    const date = todayBerlin();
-    for (const difficulty of DIFFICULTIES) {
-      await ensureChallenge(date, difficulty);
-    }
-  }
-);
-
 // Liefert die heutige Challenge der gewählten Stufe – NUR aus dem Cache, keine
 // Lazy-Generierung. Fehlt sie, meldet die Antwort available:false (Frontend zeigt
-// dann „keine Challenge verfügbar"). Generiert wird ausschließlich per Cron oder
+// dann „keine Challenge verfügbar"). Generiert wird ausschließlich
 // per Admin-Befehl (adminGenerateChallenge).
 export const getDailyChallenge = onCall({ timeoutSeconds: 30 }, async (request) => {
   const { difficulty } = request.data ?? {};
