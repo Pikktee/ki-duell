@@ -35,6 +35,10 @@ export interface DailyChallenge {
   difficulty: Difficulty;
   rounds: ChallengeRound[];
   createdAt: number;
+  // Gesetzt, wenn der Eintrag aus einer früheren Challenge derselben Stufe geklont wurde
+  // (Fallback, wenn keine frische Challenge für `date` generiert wurde). Der ursprüngliche
+  // Generierungs-Tag bleibt sichtbar für Admin/Debug.
+  recycledFrom?: string;
 }
 
 export function todayBerlin(): string {
@@ -179,6 +183,48 @@ export async function getChallenge(
   return snap.exists ? (snap.data() as DailyChallenge) : null;
 }
 
+// Fallback, wenn der Cron für `date` keine frische Challenge erzeugt hat: klont
+// deterministisch eine vergangene Challenge derselben Stufe und speichert sie unter
+// dem heutigen Schlüssel. Deterministischer Seed -> parallele Aufrufe wählen dieselbe
+// Quelle, gleichzeitige `.set()` sind idempotent. Liefert null, wenn es noch keine
+// vergangene Challenge dieser Stufe gibt (echter Erst-Tag).
+export async function recycleChallenge(
+  date: string,
+  difficulty: Difficulty
+): Promise<DailyChallenge | null> {
+  const snap = await getFirestore().collection("dailyChallenges").get();
+  let candidates = snap.docs
+    .map((doc) => doc.data() as DailyChallenge)
+    .filter((entry) => entry.difficulty === difficulty && entry.date < date);
+
+  if (candidates.length === 0) {
+    // Falls keine vergangenen Challenges existieren, nimm irgendeine dieser Stufe als Fallback
+    candidates = snap.docs
+      .map((doc) => doc.data() as DailyChallenge)
+      .filter((entry) => entry.difficulty === difficulty);
+  }
+
+  if (candidates.length === 0) return null;
+
+  candidates.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+  const rng = seededRandom(`recycle|${date}|${difficulty}`);
+  const pick = candidates[Math.floor(rng() * candidates.length)];
+
+  const recycled: DailyChallenge = {
+    date,
+    difficulty,
+    rounds: pick.rounds,
+    createdAt: Date.now(),
+    recycledFrom: pick.recycledFrom ?? pick.date,
+  };
+  await getFirestore()
+    .collection("dailyChallenges")
+    .doc(challengeId(date, difficulty))
+    .set(recycled);
+  console.info(`Challenge recycelt: ${date}/${difficulty} <- ${recycled.recycledFrom}`);
+  return recycled;
+}
+
 // Erzwingt eine frische Challenge (überschreibt eine vorhandene) – für den Admin-Befehl.
 export async function regenerateChallenge(
   date: string,
@@ -258,9 +304,9 @@ export const getDailyChallenge = onCall({ timeoutSeconds: 30 }, async (request) 
     throw new HttpsError("invalid-argument", "Unbekannte Schwierigkeitsstufe.");
   }
   const date = todayBerlin();
-  const challenge = await getChallenge(date, difficulty);
+  const challenge = (await getChallenge(date, difficulty)) ?? (await recycleChallenge(date, difficulty));
   if (!challenge) {
-    return { date, difficulty, available: false, rounds: [] };
+    throw new HttpsError("not-found", "Keine Challenge für heute verfügbar.");
   }
   return { date, difficulty, available: true, rounds: challenge.rounds.map(sanitizeRound) };
 });

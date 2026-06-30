@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="ai-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00ff9c" />
+      <stop offset="100%" stop-color="#ff00ff" />
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="#0f0f15" />
+  <path d="M12 32 C 12 32, 24 16, 32 16 C 40 16, 52 32, 52 32 C 52 32, 40 48, 32 48 C 24 48, 12 32, 12 32 Z" fill="none" stroke="url(#ai-grad)" stroke-width="3" filter="url(#glow)" />
+  <circle cx="32" cy="32" r="10" fill="none" stroke="#00ff9c" stroke-width="3" filter="url(#glow)" />
+  <circle cx="32" cy="32" r="4" fill="#ff00ff" filter="url(#glow)" />
+</svg>

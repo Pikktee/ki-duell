@@ -1,0 +1,6 @@
+{
+  "name": "Echt oder KI?",
+  "description": "Trainiere dein Auge für künstliche Kunst. Ein Spiel, in dem man menschliche Kunst von KI-Fälschungen unterscheiden muss. Jeden Tag neue Herausforderungen.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
