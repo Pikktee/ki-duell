@@ -86,6 +86,7 @@ function DemoCard({ chip, image, caption, revealed, isFake }: DemoCardProps) {
             alt={caption}
             className="absolute inset-0 h-full w-full object-cover"
             loading="lazy"
+            referrerPolicy="no-referrer"
           />
           {/* Subtle darken on top of the image so captions read */}
           <div className="absolute inset-0 bg-gradient-to-t from-cyber-dark/80 via-cyber-dark/0 to-cyber-dark/40" />
